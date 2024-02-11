@@ -1,0 +1,86 @@
+Что вы должны сделать в консоли Django?
+
+в директорию
+    cd NewsPaper
+
+выполним две команды: одна для создания миграций, другая — для их применения.
+    python manage.py makemigrations
+    python manage.py migrate
+
+Shell
+    python manage.py shell
+
+нужно импортировать модель (она находится в отдельном модуле-приложении news, * - всё):
+    from news.models import *
+
+1 Создать двух пользователей (с помощью метода User.objects.create_user('username')).
+    u1 = User.objects.create_user(username='Igor')
+    u2 = User.objects.create_user(username='Vika')
+    u3 = User.objects.create_user(username='Oleg')
+
+2 Создать два объекта модели Author, связанные с пользователями.
+    a1 = Author.objects.create(user=u1)    # объект модели Author
+    a2 = Author.objects.create(user=u2)
+    a3 = Author.objects.create(user=u3)
+
+    ### a1 = Author.objects.get(pk=1)   # забрать автора из базы
+
+3 Добавить 4 категории в модель Category.
+    cat1 = Category.objects.create(category_name='Политика')
+    cat2 = Category.objects.create(category_name='Спорт')
+    cat3 = Category.objects.create(category_name='Бизнес')
+    cat4 = Category.objects.create(category_name='IT')
+
+4 Добавить 2 статьи и 1 новость.)
+    p1 = Post.objects.create(author=a1, post_type='AR', title='Заголовок', text='AR - статья')
+    p2 = Post.objects.create(author=a2, post_type='NW', title='Заголовок статьи', text='text news')
+    p3 = Post.objects.create(author=a1, post_type='AR', title='Заголовок статьи', text='AR - ещё статья')
+
+5 Присвоить им категории (как минимум в одной статье/новости должно быть не меньше 2 категорий).    save()
+    po1 = Post.objects.get(id=1).category.add(Category.objects.get(id=1))
+    po2 = Post.objects.get(id=2).category.add(Category.objects.get(id=1))
+    po3 = Post.objects.get(id=2).category.add(Category.objects.get(id=4))
+
+6 Создать как минимум 4 комментария к разным объектам модели Post (в каждом объекте должен быть как минимум один комментарий).
+    c1 = Comment.objects.create(comment_post=Post.objects.get(id=1), comment_user=Author.objects.get(id=1).user, text='comment authors')
+    c2 = Comment.objects.create(comment_post=Post.objects.get(id=2), comment_user=Author.objects.get(id=3).user, text='comment authors2')
+    c3 = Comment.objects.create(comment_post=Post.objects.get(id=2), comment_user=Author.objects.get(id=2).user, text='comment authors2_2')
+    c4 = Comment.objects.create(comment_post=Post.objects.get(id=1), comment_user=Author.objects.get(id=2).user, text='comment authors1_2')
+
+7 Применяя функции like() и dislike() к статьям/новостям и комментариям, скорректировать рейтинги этих объектов.
+    co1 = Comment.objects.get(id=1).like()    # Comment.objects.get(id=1).rating - комментариям
+    co2 = Comment.objects.get(id=2).dislike()
+    co3 = Comment.objects.get(id=3).dislike()
+    cp1 = Post.objects.get(id=1).like()       # +1 like статье №1
+    cp2 = Post.objects.get(id=2).like()
+    cp3 = Post.objects.get(id=2).like()
+    cp4 = Post.objects.get(id=3).dislike()
+
+8 Обновить рейтинги пользователей.
+    a = Author.objects.get(user_id=1)
+    a.update_rating()
+    a.ratingAuthor
+
+9 Вывести username и рейтинг лучшего пользователя (применяя сортировку и возвращая поля первого объекта).
+    Author.objects.order_by('-ratingAuthor').values('user__username', 'ratingAuthor').first()
+
+    best_user = Author.objects.order_by('-ratingAuthor').values('user__username', 'ratingAuthor')[0]
+
+    Author.objects.order_by('-ratingAuthor')    # всех пользователей - QuerySet
+
+10 Вывести дату добавления, username автора, рейтинг, заголовок и превью лучшей статьи, основываясь на лайках/дизлайках к этой статье.
+    posts = Post.objects.order_by('-rating')
+    posts.values('author__user__username').first()
+    posts.values('author__user__username', 'post_time', 'rating', 'title').first()
+    posts.first().preview()
+
+    #### или так:
+    post_best = Post.objects.order_by('-rating').first()
+    post_best.author.user.username
+    post_best.rating
+    post_best.title
+    post_best.preview()
+
+11 Вывести все комментарии (дата, пользователь, рейтинг, текст) к этой статье.
+    Post.objects.order_by('-rating')[0].comment_set.all().values('comment_time', 'comment_user__username', 'rating', 'text')
+
